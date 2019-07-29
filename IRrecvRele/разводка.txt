@@ -27,3 +27,5 @@ SCL -- A5 или SCL
   pinMode(7, OUTPUT); //  жалюзи закр
   pinMode(8, OUTPUT); //  жалюзи откр  
   dht.setup(5); //DHT3 сенсор Temperature , Humidity.  5 pin 
+
+просто добавил
