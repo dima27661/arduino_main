@@ -75,7 +75,7 @@ byte rest_hour=0;
 
 IRrecv irrecv(RECV_PIN);
 decode_results results;
-
+int incomingByte = 0;
 
 void setup()
 {
@@ -146,6 +146,16 @@ void loop() {
 
 
 SecCount(); // счётчик секунд независит от часов DS1307
+
+  if (Serial.available() > 0) {
+    incomingByte = Serial.read();
+    key_code = incomingByte;
+     ProcessCommand(key_code); // Обрабатываю код из ИК приёмника или COM порта 
+    Serial.print("I received: ");
+    Serial.println(incomingByte, DEC);
+  }
+
+
   if (IsSetUpOn) {
          //  display.set(20); // ярче  
            display.set(_second % 2 ? 16 : 8);
@@ -203,88 +213,10 @@ time_interval = millis() - time0;
     Serial.println (results.value, HEX);
   digitalWrite(10, HIGH); // мигаю светодиодом показываю что дистанционка работает 
     key_code = results.value;
+
+    ProcessCommand(key_code); // Обрабатываю код из ИК приёмника или COM порта 
   
  
- //   storeCode(&results);
-     Serial.println (key_code); 
-   if  (key_code == 2287677653) // 1 на пульте
-    {
-     Serial.println (key_code);       
-       if (IsClockOn) {
-         IsClockOn =false;
-         digitalWrite(9,LOW);
-         }
-       else {
-         IsClockOn =true; 
-         digitalWrite(9, HIGH);
-       }
-     } 
- 
-    if  (key_code == 3890270129) // 2 на пульте
-    {
-     Serial.println (key_code);       
-       if (IsTVBoxOn) {
-         IsTVBoxOn =false;
-         }
-       else {
-         IsTVBoxOn =true; 
-       }
-     }   
-     
-   if  (key_code == 2739886593) // 3 на пульте
-    {
-     Serial.println (key_code);       
-       if (IsLampOn) {
-         IsLampOn =false;
-         }
-       else {
-         IsLampOn =true; 
-       }
-     }      
-     
-
-    if  (key_code == 3353394895) // MENU на пульте
-    {
-     Serial.println (key_code);       
-       if (IsSetUpOn) {
-         IsSetUpOn =false;
-         }
-       else {
-         IsSetUpOn =true;          
-       }
-     }   
-       
-    if  (IsSetUpOn) // set time from du
-    {
-         if  (key_code == 1259510059) // громкость +
-          {hour++;} 
-         if  (key_code == 468240397) // громкость -
-          {hour--;}   
-         if  (key_code == 2970385547) // p +
-          {minute++;  second =0;} 
-         if  (key_code == 278010727) // p -
-          {minute--;  second =0;}  
-
-     }   
-    else
-     {
-         if  (key_code == 2970385547) // p +
-          {     
-             digitalWrite(7, HIGH);  
-           //  delay(500);              // wait for a second
-           //  digitalWrite(7, LOW);    // turn the LED off by making the voltage LOW
-           } 
-         if  (key_code == 278010727) // p -
-          {
-             digitalWrite(8, HIGH);  
-           //  delay(500);              // wait for a second
-          //   digitalWrite(8, LOW);    // turn the LED off by making the voltage LOW
-          }        
-       
-     }    
-     
-     
-   // key_code = 0;  
 
     irrecv.resume(); // Receive the next value
 
@@ -299,6 +231,7 @@ time_interval = millis() - time0;
   
    digitalWrite(7, LOW);    // turn the LED off by making the voltage LOW    
    digitalWrite(8, LOW);    // turn the LED off by making the voltage LOW  
+   incomingByte =0;
   
 } // end loop
 
@@ -696,6 +629,90 @@ void PrintOutTemperature()
    //  lcd.print(hum);   
    //  lcd.print("%"); 
  
+}
+
+void ProcessCommand (  unsigned long key_code){
+  
+ //   storeCode(&results);
+     Serial.println (key_code); 
+   if  (key_code == 2287677653) // 1 на пульте
+    {
+     Serial.println (key_code);       
+       if (IsClockOn) {
+         IsClockOn =false;
+         digitalWrite(9,LOW);
+         }
+       else {
+         IsClockOn =true; 
+         digitalWrite(9, HIGH);
+       }
+     } 
+ 
+    if  (key_code == 3890270129) // 2 на пульте
+    {
+     Serial.println (key_code);       
+       if (IsTVBoxOn) {
+         IsTVBoxOn =false;
+         }
+       else {
+         IsTVBoxOn =true; 
+       }
+     }   
+     
+   if  (key_code == 2739886593 || key_code == 51  ) // 51-ascii =  3 на пульте
+    {
+     Serial.println (key_code);       
+       if (IsLampOn) {
+         IsLampOn =false;
+         }
+       else {
+         IsLampOn =true; 
+       }
+     }      
+     
+
+    if  (key_code == 3353394895) // MENU на пульте
+    {
+     Serial.println (key_code);       
+       if (IsSetUpOn) {
+         IsSetUpOn =false;
+         }
+       else {
+         IsSetUpOn =true;          
+       }
+     }   
+       
+    if  (IsSetUpOn) // set time from du
+    {
+         if  (key_code == 1259510059) // громкость +
+          {hour++;} 
+         if  (key_code == 468240397) // громкость -
+          {hour--;}   
+         if  (key_code == 2970385547) // p +
+          {minute++;  second =0;} 
+         if  (key_code == 278010727) // p -
+          {minute--;  second =0;}  
+
+     }   
+    else
+     {
+         if  (key_code == 2970385547) // p +
+          {     
+             digitalWrite(7, HIGH);  
+           //  delay(500);              // wait for a second
+           //  digitalWrite(7, LOW);    // turn the LED off by making the voltage LOW
+           } 
+         if  (key_code == 278010727) // p -
+          {
+             digitalWrite(8, HIGH);  
+           //  delay(500);              // wait for a second
+          //   digitalWrite(8, LOW);    // turn the LED off by making the voltage LOW
+          }        
+       
+     }    
+     
+     
+   // key_code = 0;  
 }
 
        
