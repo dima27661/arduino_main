@@ -1,3 +1,4 @@
+
 /*
  * IRremote: IRrecvDemo - demonstrates receiving IR codes with IRrecv
  * An IR detector/demodulator must be connected to the input RECV_PIN.
@@ -14,14 +15,17 @@
  * http://arcfn.com
 
  */
-#include <IRremote.h>
+ 
+
 #include <Wire.h>
+#include <IRremote.h>
 #include "TM1637.h"
 #include "DHT3.h"  //library  dht sensor Temperature, Humidity
 #include <LiquidCrystal_I2C.h>   //library 
-LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display 
 #define DS1307_ADDRESS 0x68
 #include <OneWire.h>
+#include "DS18B20.h"
 
 //Массив, содержащий время компиляции
 char compileTime[] = __TIME__;
@@ -724,10 +728,3 @@ void ProcessCommand (  unsigned long key_code){
 
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
-
-
-
-
-
-
-
