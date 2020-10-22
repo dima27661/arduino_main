@@ -26,6 +26,7 @@ LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars
 #define DS1307_ADDRESS 0x68
 #include <OneWire.h>
 #include "DS18B20.h"
+#include "my_functions.h"
 
 //Массив, содержащий время компиляции
 char compileTime[] = __TIME__;
@@ -44,6 +45,7 @@ char compileDate[] = __DATE__;
   byte DS18B20data[12];  
 OneWire  ds(6);  // on pin 6 (a 4.7K resistor is necessary)
 
+
 //I2C. аналоговые пины для Arduino 328
 //SDA -- A4 
 //SCL -- A5
@@ -59,7 +61,7 @@ OneWire  ds(6);  // on pin 6 (a 4.7K resistor is necessary)
 TM1637 display(DISPLAY_CLK_PIN, DISPLAY_DIO_PIN);
 //DS1307 clock;
 DHT dht;
- 
+DS1820 DS_MY; 
 int PinNuber;
 
 boolean IsClockOn;
@@ -81,9 +83,13 @@ IRrecv irrecv(RECV_PIN);
 decode_results results;
 int incomingByte = 0;
 
+
 void setup()
 {
   Wire.begin();
+  DS_MY.pin = 6;
+  
+  
   
   display.set();
   display.init();
@@ -134,6 +140,7 @@ void setup()
 
 
   delay(dht.getMinimumSamplingPeriod()); 
+  DS_MY.pin = 7;
     
 }
 
@@ -462,7 +469,10 @@ if ((millis() - sensor_sleep_time) > 30000) {
    sensor_sleep_time = millis();
 
     PrintOutTemperature();
-    PrintInTemperature();    
+   // DS_MY.read_1(); //ошибка нужно курить https://medium.com/@rishabhdevyadav/create-your-own-arduino-library-h-and-cpp-files-62ab456453e0
+  //  DS_MY.PrintInTemperature();  // ошибка 
+   int result = addTwoInts(4,3); // работает из внешнего файла
+    
  }     
 }
 
