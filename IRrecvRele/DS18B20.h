@@ -1,6 +1,6 @@
  #include <inttypes.h>
  #include <Arduino.h>
- #include <OneWire.h>
+ #include "OneWire.h"
  class DS1820   // название класса
 {
   private:
@@ -18,6 +18,7 @@
     void read_1();
     void PrintInTemperature();
 };
+
 
 
 

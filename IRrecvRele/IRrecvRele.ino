@@ -24,9 +24,13 @@
 #include <LiquidCrystal_I2C.h>   //library 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display 
 #define DS1307_ADDRESS 0x68
-#include <OneWire.h>
+#include "OneWire.h"
 #include "DS18B20.h"
 #include "my_functions.h"
+#include "Led.h"
+
+
+
 
 //Массив, содержащий время компиляции
 char compileTime[] = __TIME__;
@@ -43,7 +47,15 @@ char compileDate[] = __DATE__;
 
   byte DS18B20addr[8];
   byte DS18B20data[12];  
-OneWire  ds(6);  // on pin 6 (a 4.7K resistor is necessary)
+//OneWire  ds(6);  // on pin 6 (a 4.7K resistor is necessary)
+OneWire ds;  // on pin 6 (a 4.7K resistor is necessary)
+
+// Use the built-in LED
+#define LED_PIN 13
+
+// Create a Led object
+// This will set the pin to OUTPUT
+Led led(LED_PIN);
 
 
 //I2C. аналоговые пины для Arduino 328
@@ -88,7 +100,9 @@ void setup()
 {
   Wire.begin();
   DS_MY.pin = 6;
+  led.on();
   
+  ds.init(6) ;  // on pin 6 (a 4.7K resistor is necessary)
   
   
   display.set();

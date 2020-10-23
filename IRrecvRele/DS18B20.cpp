@@ -1,7 +1,8 @@
 
  #include <Arduino.h>
- #include <OneWire.h>
- OneWire  ds1(6);  // on pin 6 (a 4.7K resistor is necessary)
+ #include "OneWire.h"
+// OneWire  ds1(6);  // on pin 6 (a 4.7K resistor is necessary)
+  OneWire  ds1;  // on pin 6 (a 4.7K resistor is necessary)
 class DS1820 {  
     private:
     byte i;
@@ -80,8 +81,7 @@ void PrintInTemperature()
   //   lcd.print(celsius);
   //   lcd.print("C");     
 }
-
-
-       
+    
 };
+
 
