@@ -41,9 +41,9 @@ char compileDate[] = __DATE__;
   byte _second = 50;  
 
   int weekDay = 0; //0-6 -> sunday - Saturday
-  int monthDay = 1;
-  int month = 1;
-  int year = 2000;
+//  int monthDay = 1;
+//  int month = 1;
+//  int year = 2000;
 
   byte DS18B20addr[8];
   byte DS18B20data[12];  
@@ -92,18 +92,16 @@ byte rest_hour=0;
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 int incomingByte = 0;
-
+  DateStruct _DateStruct;
 
 void setup()
 {
+  Serial.begin(9600);
   Wire.begin();
-  DS_MY.pin = 6;
-  DS_MY.lcd = &lcd;
- // led.on();
 
+  DS_MY.lcd = &lcd;
   DS_MY.init(6) ;  // on pin 6 (a 4.7K resistor is necessary)
-  
-  
+
   display.set();
   display.init();
 
@@ -111,6 +109,11 @@ void setup()
    minute = getInt(compileTime, 3);
    second = getInt(compileTime, 6);
 
+  _DateStruct = ConvertDate (__DATE__);
+ 
+  weekDay = 1;
+
+  setDateTimeDS1307(byte (second),byte (minute),byte (hour),  weekDay,  _DateStruct.day, _DateStruct.month, _DateStruct.year);
 
    _second = second;
    start_time0 = millis();
@@ -122,7 +125,7 @@ void setup()
   IsTVBoxOn = false;  
   IsLampOn = false;  
   IsSetUpOn = false;
-  Serial.begin(9600);
+
   irrecv.enableIRIn(); // Start the receiver
     PinNuber = 13; // реле (большое) часов    
   pinMode(PinNuber, OUTPUT);
@@ -141,7 +144,6 @@ void setup()
   digitalWrite(9, LOW);   
   digitalWrite(7, LOW); 
   digitalWrite(8, LOW);   
-
    
   time0 = millis();
   time_interval = millis() - time0;
@@ -150,10 +152,7 @@ void setup()
   lcd.backlight();
   lcd.setCursor(0, 0); //set Starting position
 
-
-
   delay(dht.getMinimumSamplingPeriod()); 
- 
     
 }
 
@@ -183,14 +182,13 @@ SecCount(); // счётчик секунд независит от часов DS
   if (IsSetUpOn) {
          //  display.set(20); // ярче  
            display.set(_second % 2 ? 16 : 8);
-          // setDateTimeDS1307(byte (second),byte (minute),byte (hour), byte weekDay,byte monthDay,byte month,byte year);
-           setDateTimeDS1307(byte (second),byte (minute),byte (hour),4,5,10,2017);
+           setDateTimeDS1307(byte (second),byte (minute),byte (hour), 4,_DateStruct.day, _DateStruct.month, _DateStruct.year);
+          // setDateTimeDS1307(byte (second),byte (minute),byte (hour),4,5,10,2017);
          }
       else
        {
          display.set(16);
         }  
-
 
 
 //  clock.getTime();
@@ -253,8 +251,8 @@ time_interval = millis() - time0;
   
   
   
-   digitalWrite(7, LOW);    // turn the LED off by making the voltage LOW    
-   digitalWrite(8, LOW);    // turn the LED off by making the voltage LOW  
+   digitalWrite(7, LOW);    // turn the louvers  off by making the voltage LOW    
+   digitalWrite(8, LOW);    // turn the louvers off by making the voltage LOW  
    incomingByte =0;
   
 } // end loop
@@ -267,60 +265,7 @@ unsigned int rawCodes[RAWBUF]; // The durations if raw
 int codeLen; // The length of the code
 int toggle = 0; // The RC5/6 toggle state
 
-void storeCode(decode_results *results) {
-  codeType = results->decode_type;
-  int count = results->rawlen;
-  if (codeType == UNKNOWN) {
-    Serial.println("Received unknown code, saving as raw");
-    codeLen = results->rawlen - 1;
-    // To store raw codes:
-    // Drop first value (gap)
-    // Convert from ticks to microseconds
-    // Tweak marks shorter, and spaces longer to cancel out IR receiver distortion
-    for (int i = 1; i <= codeLen; i++) {
-      if (i % 2) {
-        // Mark
-        rawCodes[i - 1] = results->rawbuf[i]*USECPERTICK - MARK_EXCESS;
-        Serial.print(" m");
-      } 
-      else {
-        // Space
-        rawCodes[i - 1] = results->rawbuf[i]*USECPERTICK + MARK_EXCESS;
-        Serial.print(" s");
-      }
-      Serial.print(rawCodes[i - 1], DEC);
-    }
-    Serial.println("");
-  }
-  else {
-    if (codeType == NEC) {
-      Serial.print("Received NEC: ");
-      if (results->value == REPEAT) {
-        // Don't record a NEC repeat value as that's useless.
-        Serial.println("repeat; ignoring.");
-        return;
-      }
-    } 
-    else if (codeType == SONY) {
-      Serial.print("Received SONY: ");
-    } 
-    else if (codeType == RC5) {
-      Serial.print("Received RC5: ");
-    } 
-    else if (codeType == RC6) {
-      Serial.print("Received RC6: ");
-    } 
-    else {
-      Serial.print("Unexpected codeType ");
-      Serial.print(codeType, DEC);
-      Serial.println("");
-    }
-    Serial.println(results->value, HEX);
-    codeValue = results->value;
-    key_code = results->value;
-    codeLen = results->bits;
-  }
-}
+
 //Содержимое функции объяснено ниже
 char getInt(const char* string, int startIndex) {
   return int(string[startIndex] - '0') * 10 + int(string[startIndex+1]) - '0';
@@ -366,10 +311,12 @@ void GetTimeDS1307() {
   second = bcdToDec(Wire.read());
   minute = bcdToDec(Wire.read());
   hour = bcdToDec(Wire.read() & 0b111111); //24 hour time
+  
    weekDay = bcdToDec(Wire.read()); //0-6 -> sunday - Saturday
-   monthDay = bcdToDec(Wire.read());
-   month = bcdToDec(Wire.read());
-   year = bcdToDec(Wire.read());
+   
+   _DateStruct.day = bcdToDec(Wire.read());
+   _DateStruct.month = bcdToDec(Wire.read());
+   _DateStruct.year = bcdToDec(Wire.read());
 
 }
 
@@ -385,7 +332,7 @@ byte decToBcd(byte val){
   return ( (val/10*16) + (val%10) );
 }
 
-void setDateTimeDS1307(byte second,byte minute,byte hour, byte weekDay,byte monthDay,byte month,byte year){
+void setDateTimeDS1307(byte second,byte minute,byte hour, byte weekDay,byte monthDay,byte month,int year){
 
 //  byte second =      00; //0-59
 //  byte minute =      33; //0-59
@@ -414,12 +361,13 @@ byte zero = 0x00; //workaround for issue #527
 void printDateToLcd(){
   // Reset the register pointer
 
-//lcd.setCursor(0, 0); //set Starting position
-//  lcd.print(monthDay);
-//  lcd.print("/");
-//  lcd.print(month);
-//  lcd.print("/");  
-//  lcd.print(year);
+
+lcd.setCursor(0, 0); //set Starting position
+  lcd.print(_DateStruct.day);
+  lcd.print("/");
+  lcd.print(_DateStruct.month);
+  lcd.print("/");  
+  lcd.print(_DateStruct.year);
 
 //  lcd.print(" ");
   lcd.setCursor(0, 1); //set Starting position
@@ -432,17 +380,6 @@ void printDateToLcd(){
    if (second<10){ lcd.print("0");}     
   lcd.print(second);
   lcd.print(" ");
-
-//  if (monthDay<10){ lcd.print("0");} 
-//  lcd.print(monthDay);
-//  lcd.print("/");
-//   if (month<10){ lcd.print("0");}   
-//  lcd.print(month);
-//  lcd.print("/");
-  
-  // if (second<10){ lcd.print("0");}     
-  //lcd.print(year);
-  
   
 }
 
@@ -468,12 +405,13 @@ if ((millis() - sensor_sleep_time) > 30000) {
   //   lcd.print(hum);   
  //    lcd.print("%");  
 
-  if (monthDay<10){ lcd.print("0");} 
-  lcd.print(monthDay);
+  if (_DateStruct.day<10){ lcd.print("0");} 
+  lcd.print(_DateStruct.day);
   lcd.print("/");
-   if (month<10){ lcd.print("0");}   
-  lcd.print(month);
-  lcd.print("/17");   
+   if (_DateStruct.month<10){ lcd.print("0");}   
+  lcd.print(_DateStruct.month);
+  lcd.print("/");
+  lcd.print(_DateStruct.year);   
 
          
     }
@@ -513,7 +451,7 @@ void ProcessCommand (  unsigned long key_code){
        }
      } 
  
-    if  (key_code == 3890270129) // 2 на пульте
+    if  (key_code == 3890270129 || key_code == 50) // 2 на пульте
     {
      Serial.println (key_code);       
        if (IsTVBoxOn) {
