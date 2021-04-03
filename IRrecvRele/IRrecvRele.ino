@@ -1,4 +1,5 @@
 
+
 /*
  * IRremote: IRrecvDemo - demonstrates receiving IR codes with IRrecv
  * An IR detector/demodulator must be connected to the input RECV_PIN.
@@ -37,6 +38,7 @@ char compileTime[] = __TIME__;
 char compileDate[] = __DATE__;
   byte hour = 11;
   byte minute = 23;
+  byte minute_compile = 23;  
   byte second = 50; 
   byte _second = 50;  
 
@@ -61,7 +63,7 @@ char compileDate[] = __DATE__;
 //SCL -- A5
  
 //Номера пинов Arduino, к которым подключается индикатор
-#define DISPLAY_CLK_PIN 3 // CLK 
+#define DISPLAY_CLK_PIN 5 // CLK 
 #define DISPLAY_DIO_PIN 4 //DIO 
 
 
@@ -93,6 +95,7 @@ IRrecv irrecv(RECV_PIN);
 decode_results results;
 int incomingByte = 0;
   DateStruct _DateStruct;
+  DateStruct _DateStruct_compile;  
 
 void setup()
 {
@@ -106,21 +109,26 @@ void setup()
   display.init();
 
    hour = getInt(compileTime, 0);
-   minute = getInt(compileTime, 3);
+   minute_compile = getInt(compileTime, 3);
    second = getInt(compileTime, 6);
 
-  _DateStruct = ConvertDate (__DATE__);
- 
+  _DateStruct_compile = ConvertDate ( __DATE__ );
+   
   weekDay = 1;
-
-  setDateTimeDS1307(byte (second),byte (minute),byte (hour),  weekDay,  _DateStruct.day, _DateStruct.month, _DateStruct.year);
-
+  
+  GetTimeDS1307(); //Запрашиваю время из часов DS1307
+  
+  if (_DateStruct_compile.day != _DateStruct.day){
+      Serial.print ( " setDateTimeDS1307 new time" );
+     setDateTimeDS1307(byte (second),byte (minute),byte (hour),  weekDay,  _DateStruct_compile.day, _DateStruct_compile.month, _DateStruct_compile.year);
+  }
+ 
    _second = second;
    start_time0 = millis();
    min_interval = millis() - start_time0;
    min_interval = _second * 1000;
   
-  rele_sleep_time = 9000; //  время (для часов 9000) сколько реле разомкнуто
+  rele_sleep_time = 9000; // время (для часов 9000) сколько реле разомкнуто
   IsClockOn = false;
   IsTVBoxOn = false;  
   IsLampOn = false;  
@@ -135,7 +143,8 @@ void setup()
   pinMode(9, OUTPUT); //  показываю что включил часы  
   pinMode(7, OUTPUT); //  жалюзи закр
   pinMode(8, OUTPUT); //  жалюзи откр  
-  dht.setup(5); //DHT3 сенсор Temperature , Humidity.  5 pin  
+  
+  // dht.setup(5); //DHT3 сенсор Temperature , Humidity.  5 pin  
   
   digitalWrite(PinNuber, LOW); 
   digitalWrite(12, LOW); 
@@ -231,12 +240,14 @@ time_interval = millis() - time0;
  
 
 
-  if (irrecv.decode(&results)) {
-    Serial.println (results.value, HEX);
+  if (irrecv.decode()) {
+    Serial.println (irrecv.decodedIRData.decodedRawData, HEX);
   digitalWrite(10, HIGH); // мигаю светодиодом показываю что дистанционка работает 
-    key_code = results.value;
-
-    ProcessCommand(key_code); // Обрабатываю код из ИК приёмника или COM порта 
+    key_code = irrecv.decodedIRData.decodedRawData;
+    
+    if (key_code>0){
+      ProcessCommand(key_code); // Обрабатываю код из ИК приёмника или COM порта 
+    } 
   
  
 
@@ -261,7 +272,7 @@ time_interval = millis() - time0;
 // Storage for the recorded code
 int codeType = -1; // The type of code
 unsigned long codeValue; // The code value if not raw
-unsigned int rawCodes[RAWBUF]; // The durations if raw
+
 int codeLen; // The length of the code
 int toggle = 0; // The RC5/6 toggle state
 
@@ -361,26 +372,65 @@ byte zero = 0x00; //workaround for issue #527
 void printDateToLcd(){
   // Reset the register pointer
 
-
 lcd.setCursor(0, 0); //set Starting position
-  lcd.print(_DateStruct.day);
+ if (_DateStruct.day >10) {
+  lcd.print( (int)( _DateStruct.day / 10) );
+  lcd.print( (int)( _DateStruct.day % 10) );
+ }
+ else {
+  lcd.print("0");
+  lcd.print( _DateStruct.day);
+ }
   lcd.print("/");
-  lcd.print(_DateStruct.month);
-  lcd.print("/");  
-  lcd.print(_DateStruct.year);
 
-//  lcd.print(" ");
+ if (_DateStruct.month >10) {
+  lcd.print( (int)( _DateStruct.month / 10) );
+  lcd.print( (int)( _DateStruct.month % 10) );
+ }
+ else {
+  lcd.print("0");
+  lcd.print( _DateStruct.month);
+ }
+ 
+  lcd.print("/");  
+  lcd.print( (int)( (_DateStruct.year % 100) /10 ) );
+  lcd.print( (int) (_DateStruct.year % 10)   ); 
+ 
   lcd.setCursor(0, 1); //set Starting position
-  if (hour<10){ lcd.print("0");} 
-  lcd.print(hour);
-  lcd.print(":");
-   if (minute<10){ lcd.print("0");}   
-  lcd.print(minute);
-  lcd.print(":");
-   if (second<10){ lcd.print("0");}     
-  lcd.print(second);
-  lcd.print(" ");
+
+ if (hour >10) {
+  lcd.print( (int)( hour / 10) );
+  lcd.print( (int)( hour % 10) );
+ }
+ else {
+  lcd.print("0");
+  lcd.print( hour);
+ }
   
+  lcd.print(":");
+
+ if (minute >10) {
+  lcd.print( (int)( minute / 10) );
+  lcd.print( (int)( minute % 10) );
+ }
+ else {
+  lcd.print("0");
+  lcd.print( minute);
+ }
+   
+  lcd.print(":");
+
+ if (second >10) {
+  lcd.print( (int)( second / 10) );
+  lcd.print( (int)( second % 10) );
+ }
+ else {
+  lcd.print("0");
+  lcd.print( second);
+ }
+ 
+  lcd.print(" ");
+
 }
 
 
@@ -404,15 +454,6 @@ if ((millis() - sensor_sleep_time) > 30000) {
   //   lcd.print(" h-"); 
   //   lcd.print(hum);   
  //    lcd.print("%");  
-
-  if (_DateStruct.day<10){ lcd.print("0");} 
-  lcd.print(_DateStruct.day);
-  lcd.print("/");
-   if (_DateStruct.month<10){ lcd.print("0");}   
-  lcd.print(_DateStruct.month);
-  lcd.print("/");
-  lcd.print(_DateStruct.year);   
-
          
     }
    Serial.println( sensor_sleep_time);
@@ -421,9 +462,22 @@ if ((millis() - sensor_sleep_time) > 30000) {
 
    // DS_MY.PrintOutTemperature();
    // DS_MY.read_1(); //ошибка нужно курить https://medium.com/@rishabhdevyadav/create-your-own-arduino-library-h-and-cpp-files-62ab456453e0
-  //  DS_MY.PrintInTemperature();   
+   // DS_MY.PrintInTemperature();   
     DS_MY.PrintAll(); // покажет все градусники на этом пине
    int result = addTwoInts(4,3); // работает из внешнего файла
+
+
+Serial.println (" ");
+  Serial.print (  _DateStruct.day);
+  Serial.print("/");
+  Serial.print(_DateStruct.month);
+  Serial.print("/");  
+  Serial.print(_DateStruct.year); 
+  Serial.print(" "); 
+  Serial.print(hour);
+  Serial.print(":");
+  Serial.print(minute);
+   
     
  }     
 }
@@ -438,7 +492,7 @@ void ProcessCommand (  unsigned long key_code){
   
  //   storeCode(&results);
      Serial.println (key_code); 
-   if  (key_code == 2287677653) // 1 на пульте
+   if  (key_code == 16898) // 1 на пульте
     {
      Serial.println (key_code);       
        if (IsClockOn) {
@@ -451,7 +505,7 @@ void ProcessCommand (  unsigned long key_code){
        }
      } 
  
-    if  (key_code == 3890270129 || key_code == 50) // 2 на пульте
+    if  (key_code == 16642 || key_code == 50) // 2 на пульте
     {
      Serial.println (key_code);       
        if (IsTVBoxOn) {
@@ -462,7 +516,7 @@ void ProcessCommand (  unsigned long key_code){
        }
      }   
      
-   if  (key_code == 2739886593 || key_code == 51  ) // 51-ascii =  3 на пульте
+   if  (key_code == 17154 || key_code == 51  ) // 51-ascii =  3 на пульте
     {
      Serial.println (key_code);       
        if (IsLampOn) {
@@ -474,11 +528,11 @@ void ProcessCommand (  unsigned long key_code){
      }      
      
 
-    if  (key_code == 3353394895) // MENU на пульте
+    if  (key_code == 17806) // MENU на пульте
     {
      Serial.println (key_code);       
        if (IsSetUpOn) {
-         IsSetUpOn =false;
+           IsSetUpOn =false;
          }
        else {
          IsSetUpOn =true;          
@@ -487,25 +541,47 @@ void ProcessCommand (  unsigned long key_code){
        
     if  (IsSetUpOn) // set time from du
     {
-         if  (key_code == 1259510059) // громкость +
+         if  (key_code == 16546) // громкость +
           {hour++;} 
-         if  (key_code == 468240397) // громкость -
+         if  (key_code == 17058) // громкость -
           {hour--;}   
-         if  (key_code == 2970385547) // p +
+         if  (key_code == 16930) // p +
           {minute++;  second =0;} 
-         if  (key_code == 278010727) // p -
+         if  (key_code == 16674) // p -
           {minute--;  second =0;}  
+         if  (key_code == 16898) // 1 на пульте
+          {_DateStruct.day++;  }
+         if  (key_code == 16642 ) // 2 на пульте          
+          {_DateStruct.day--;  }
+         if  (key_code == 17154   ) // 51-ascii =  3 на пульте   
+          {_DateStruct.month++;  }                
+         if  (key_code == 16514   ) // 4 на пульте   
+          {_DateStruct.month--;  }   
+         if  (key_code == 17026   ) // 5 на пульте   
+          {_DateStruct.year++;  } 
+
+         if  (key_code == 16770   ) // 6 на пульте   
+          {_DateStruct.year--;  } 
+
+
+
+
+
+        
+        // _DateStruct.day, _DateStruct.month, _DateStruct.year          
+
+          
 
      }   
     else
      {
-         if  (key_code == 2970385547) // p +
+         if  (key_code == 16930) // p +
           {     
              digitalWrite(7, HIGH);  
            //  delay(500);              // wait for a second
            //  digitalWrite(7, LOW);    // turn the LED off by making the voltage LOW
            } 
-         if  (key_code == 278010727) // p -
+         if  (key_code == 16674) // p -
           {
              digitalWrite(8, HIGH);  
            //  delay(500);              // wait for a second
