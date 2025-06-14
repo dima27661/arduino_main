@@ -1,31 +1,12 @@
 
-TM1637 -- 4-х цифровой   экран
-clc -- 3
-dio -- 4
-vcc --3v3
-gnd -- gnd
-
 lcd и расширитель  портов PCF8574
 SDA -- A4 или SDA
 SCL -- A5 или SCL
 
-DS1307 часы реального времени
-SDA -- A4 или SDA
-SCL -- A5 или SCL
 
 ик  TSOP348 приёмник слева на право
 1 = OUT -- D2
 2 = GND --
 3 = VS  --
 
-    PinNuber = 13; // реле (большое) часов    
-  pinMode(PinNuber, OUTPUT);
-  pinMode(12, OUTPUT); // IsTVBoxOn
-  pinMode(11, OUTPUT); // lamp   
   pinMode(10, OUTPUT); //  мигаю светодиодом показываю что дистанционка работает  
-  pinMode(9, OUTPUT); //  показываю что включил часы  
-  pinMode(7, OUTPUT); //  жалюзи закр
-  pinMode(8, OUTPUT); //  жалюзи откр  
-  dht.setup(5); //DHT3 сенсор Temperature , Humidity.  5 pin 
-
-просто добавил

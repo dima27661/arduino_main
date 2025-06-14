@@ -18,6 +18,9 @@
     int pin;  // данные - пин подключения датчика, по которому получаем значение датчика
     int data_test; // данные - значение датчика
     void init(uint8_t pin);
+    void PrintFloat(float pin);
+    void PrintString(String val);
     LiquidCrystal_I2C *lcd; 
-    void PrintAll(void);
+    float PrintAll(void);
+//    PrintAllStr(float celsius );
 };

@@ -7,8 +7,42 @@ void DS1820::init(uint8_t pin)
 }
 
 
+void DS1820::PrintFloat(float pin)
+{
+ String floatString = String(pin);
+  CursorPos =0;
 
-void DS1820::PrintAll(void) {
+String myString = "Hello, Arduino!";
+
+ int stringLength = floatString.length();
+
+  // Перебираем все символы строки
+  for (int i = 0; i < stringLength; i++) {
+    char character = floatString.charAt(i);
+
+   lcd->print(character);
+  }
+  
+}
+
+
+void DS1820::PrintString(String val)
+{
+// String myString = val;// "Limit temp = ";
+
+ int stringLength = val.length();
+
+  // Перебираем все символы строки
+  for (int i = 0; i < stringLength; i++) {
+    char character = val.charAt(i);
+    lcd->print(character);
+  }
+  
+}
+
+
+
+float DS1820::PrintAll(void) {
   byte i;
   byte present = 0;
   byte type_s;
@@ -22,20 +56,20 @@ void DS1820::PrintAll(void) {
     ds.reset_search();
     //delay(250);
     CursorPos = 0;
-    return;
+    return celsius;
   }
   CursorPos = CursorPos + 1;
   if (CursorPos >1) {CursorPos=0;}
   
-  Serial.print("ROM =");
+  // Serial.print("ROM =");
   for( i = 0; i < 8; i++) {
-    Serial.write(", 0x");
-    Serial.print(addr[i], HEX);
+  //  Serial.write(", 0x");
+  //  Serial.print(addr[i], HEX);
   }
 
   if (OneWire::crc8(addr, 7) != addr[7]) {
       Serial.println("CRC is not valid!");
-      return;
+      return celsius;
   }
   Serial.println();
  
@@ -55,7 +89,7 @@ void DS1820::PrintAll(void) {
       break;
     default:
       Serial.println("Device is not a DS18x20 family device.");
-      return;
+      return celsius;
   } 
 
   ds.reset();
@@ -69,13 +103,13 @@ void DS1820::PrintAll(void) {
   ds.select(addr);    
   ds.write(0xBE);         // Read Scratchpad
 
-  Serial.print("  Data = ");
-  Serial.print(present, HEX);
-  Serial.print(" ");
+//  Serial.print("  Data = ");
+//  Serial.print(present, HEX);
+ // Serial.print(" ");
   for ( i = 0; i < 9; i++) {           // we need 9 bytes
     data[i] = ds.read();
-    Serial.print(data[i], HEX);
-    Serial.print(" ");
+  //  Serial.print(data[i], HEX);
+ //   Serial.print(" ");
   }
   Serial.print(" CRC=");
   Serial.print(OneWire::crc8(data, 8), HEX);
@@ -102,39 +136,42 @@ void DS1820::PrintAll(void) {
   }
   celsius = (float)raw / 16.0;
   fahrenheit = celsius * 1.8 + 32.0;
-  Serial.print("  Temperature = ");
-  Serial.print(celsius);
-  Serial.print(" Celsius, ");
-  Serial.print(fahrenheit);
-  Serial.println(" Fahrenheit");
+ // Serial.print("  Temperature = ");
+ // Serial.print(celsius);
+ // Serial.print(" Celsius, ");
+ // Serial.print(fahrenheit);
+ // Serial.println(" Fahrenheit");
+
+
+     lcd->setCursor(1, 1); //set Starting position    
+   //  lcd->print(  &"fuck"  );     
+  
   
      lcd->setCursor(10, CursorPos); //set Starting position    
-     if (celsius < 0) {
-        lcd->print("-");
-       } 
-       else {
-        lcd->print("+");
-       } 
-     celsius = round( fabs(celsius));  
 
+     // celsius = round( fabs(celsius));  
+     PrintFloat (celsius);
+// lcd->print(  celsius  );
 
- if (celsius >9) {
-  lcd->print( (int)( celsius / 10) );
-  lcd->print((int)( celsius) %10) ;
- }
- else {
- // lcd->print("0");
-  lcd->print((int) celsius);
-  lcd->print(" ");
- }       
+       
 
-     
+  return celsius;   
    //  lcd->print(celsius);
  
   
   //   lcd->print("C");     
 
 }
+//
+//
+//DS1820::PrintAllStr(float celsius ) {
+//
+//  // Преобразование float в String
+//  String floatString = String(celsius);
+//
+//  // Вывод строки на последовательный порт
+// //` Serial.println(floatString);
+//}
 
 
     

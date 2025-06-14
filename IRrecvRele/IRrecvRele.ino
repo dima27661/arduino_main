@@ -41,7 +41,9 @@ char compileDate[] = __DATE__;
   byte minute_compile = 23;  
   byte second = 50; 
   byte _second = 50;  
-
+float celsius =0;
+float celsiusLimit =22;
+float celsiusLimitTemp;
   int weekDay = 0; //0-6 -> sunday - Saturday
 //  int monthDay = 1;
 //  int month = 1;
@@ -105,37 +107,14 @@ void setup()
   DS_MY.lcd = &lcd;
   DS_MY.init(6) ;  // on pin 6 (a 4.7K resistor is necessary)
 
-  display.set();
-  display.init();
 
-   hour = getInt(compileTime, 0);
-   minute_compile = getInt(compileTime, 3);
-   second = getInt(compileTime, 6);
 
-  _DateStruct_compile = ConvertDate ( __DATE__ );
-   
-  weekDay = 1;
-  
-  GetTimeDS1307(); //Запрашиваю время из часов DS1307
-  
-  if (_DateStruct_compile.day != _DateStruct.day){
-      Serial.print ( " setDateTimeDS1307 new time" );
-     setDateTimeDS1307(byte (second),byte (minute),byte (hour),  weekDay,  _DateStruct_compile.day, _DateStruct_compile.month, _DateStruct_compile.year);
-  }
  
-   _second = second;
-   start_time0 = millis();
-   min_interval = millis() - start_time0;
-   min_interval = _second * 1000;
-  
-  rele_sleep_time = 9000; // время (для часов 9000) сколько реле разомкнуто
   IsClockOn = false;
   IsTVBoxOn = false;  
   IsLampOn = false;  
   IsSetUpOn = false;
 
-  irrecv.enableIRIn(); // Start the receiver
-    PinNuber = 13; // реле (большое) часов    
   pinMode(PinNuber, OUTPUT);
   pinMode(12, OUTPUT); // IsTVBoxOn
   pinMode(11, OUTPUT); // lamp   
@@ -143,8 +122,7 @@ void setup()
   pinMode(9, OUTPUT); //  показываю что включил часы  
   pinMode(7, OUTPUT); //  жалюзи закр
   pinMode(8, OUTPUT); //  жалюзи откр  
-  
-  // dht.setup(5); //DHT3 сенсор Temperature , Humidity.  5 pin  
+  pinMode(LED_BUILTIN, OUTPUT);  
   
   digitalWrite(PinNuber, LOW); 
   digitalWrite(12, LOW); 
@@ -154,15 +132,17 @@ void setup()
   digitalWrite(7, LOW); 
   digitalWrite(8, LOW);   
    
-  time0 = millis();
-  time_interval = millis() - time0;
-  sensor_sleep_time = time_interval;
   lcd.init();                     
   lcd.backlight();
   lcd.setCursor(0, 0); //set Starting position
 
-  delay(dht.getMinimumSamplingPeriod()); 
-    
+ //lcd.setCursor(1, 0); //set Starting position
+
+  DS_MY.PrintString("Limit temp = ");
+  DS_MY.PrintFloat (celsiusLimit);
+  irrecv.enableIRIn(); // Start the receiver
+ celsiusLimitTemp = celsiusLimit;
+   
 }
 
 
@@ -183,6 +163,7 @@ SecCount(); // счётчик секунд независит от часов DS
     incomingByte = Serial.read();
     key_code = incomingByte;
      ProcessCommand(key_code); // Обрабатываю код из ИК приёмника или COM порта 
+
     Serial.print("I received: ");
     Serial.println(incomingByte, DEC);
   }
@@ -191,8 +172,7 @@ SecCount(); // счётчик секунд независит от часов DS
   if (IsSetUpOn) {
          //  display.set(20); // ярче  
            display.set(_second % 2 ? 16 : 8);
-           setDateTimeDS1307(byte (second),byte (minute),byte (hour), 4,_DateStruct.day, _DateStruct.month, _DateStruct.year);
-          // setDateTimeDS1307(byte (second),byte (minute),byte (hour),4,5,10,2017);
+           
          }
       else
        {
@@ -201,9 +181,7 @@ SecCount(); // счётчик секунд независит от часов DS
 
 
 //  clock.getTime();
-//GetTime(); //Запрашиваю расчётное время при отсутствии часов DS1307
-
-GetTimeDS1307(); //Запрашиваю время из часов DS1307
+GetTime(); //Запрашиваю расчётное время при отсутствии часов DS1307
 
 timeDisp[0] = hour / 10;
 timeDisp[1] = hour % 10;  //остатка от деления
@@ -215,7 +193,7 @@ timeDisp[3] = minute % 10;
   // вкл-выкл двоеточие каждую секунду
   display.point(_second % 2 ? POINT_ON : POINT_OFF);
 
- printDateToLcd();
+ //printDateToLcd();
  PrintTemperature();
 
 
@@ -311,26 +289,6 @@ void SecCount() {
     }
 }
 
-void GetTimeDS1307() {
-  Wire.beginTransmission(DS1307_ADDRESS);
-
-  byte zero = 0x00;
-  Wire.write(zero);
-  Wire.endTransmission();
-  Wire.requestFrom(DS1307_ADDRESS, 7);
-
-  second = bcdToDec(Wire.read());
-  minute = bcdToDec(Wire.read());
-  hour = bcdToDec(Wire.read() & 0b111111); //24 hour time
-  
-   weekDay = bcdToDec(Wire.read()); //0-6 -> sunday - Saturday
-   
-   _DateStruct.day = bcdToDec(Wire.read());
-   _DateStruct.month = bcdToDec(Wire.read());
-   _DateStruct.year = bcdToDec(Wire.read());
-
-}
-
 
 
 byte bcdToDec(byte val)  {
@@ -343,31 +301,6 @@ byte decToBcd(byte val){
   return ( (val/10*16) + (val%10) );
 }
 
-void setDateTimeDS1307(byte second,byte minute,byte hour, byte weekDay,byte monthDay,byte month,int year){
-
-//  byte second =      00; //0-59
-//  byte minute =      33; //0-59
-//  byte hour =        23; //0-23
-//  byte weekDay =     4; //1-7
-//  byte monthDay =    05; //1-31
-//  byte month =       11; //1-12
-//  byte year  =       16; //0-99
-byte zero = 0x00; //workaround for issue #527
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire.write(zero); //stop Oscillator
-
-  Wire.write(decToBcd(second));
-  Wire.write(decToBcd(minute));
-  Wire.write(decToBcd(hour));
-  Wire.write(decToBcd(weekDay));
-  Wire.write(decToBcd(monthDay));
-  Wire.write(decToBcd(month));
-  Wire.write(decToBcd(year));
-
-  Wire.write(zero); //start 
-  Wire.endTransmission();
-
-}
 
 void printDateToLcd(){
   // Reset the register pointer
@@ -438,24 +371,9 @@ lcd.setCursor(0, 0); //set Starting position
 void PrintTemperature()
 {
 
-if ((millis() - sensor_sleep_time) > 30000) {
-  int tem;
-  int hum;  
-  tem = dht.getTemperature();
-  hum = dht.getHumidity();
-  if (tem > 0) {
-    lcd.setCursor(0, 0); //set Starting position  
-  //  lcd.print("                ");  
-    lcd.setCursor(0, 0); //set Starting position   
+if ((millis() - sensor_sleep_time) > 5000) {
 
-       
-  //   lcd.print(tem);
-  //   lcd.print("C");     
-  //   lcd.print(" h-"); 
-  //   lcd.print(hum);   
- //    lcd.print("%");  
-         
-    }
+
    Serial.println( sensor_sleep_time);
  //  Serial.println( dht.getMinimumSamplingPeriod());
    sensor_sleep_time = millis();
@@ -463,7 +381,45 @@ if ((millis() - sensor_sleep_time) > 30000) {
    // DS_MY.PrintOutTemperature();
    // DS_MY.read_1(); //ошибка нужно курить https://medium.com/@rishabhdevyadav/create-your-own-arduino-library-h-and-cpp-files-62ab456453e0
    // DS_MY.PrintInTemperature();   
-    DS_MY.PrintAll(); // покажет все градусники на этом пине
+  celsius =  DS_MY.PrintAll(); // покажет все градусники на этом пине
+
+  
+  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+  if  (celsius < celsiusLimitTemp){
+      digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+      IsLampOn =true; 
+           lcd.setCursor(0, 1); //set Starting position
+                 DS_MY.PrintString("Power ON ");
+                 
+      if (celsiusLimitTemp <= celsiusLimit) {
+          Serial.print("   celsius = ");
+          Serial.print(celsius);
+          Serial.print("   celsiusLimitTemp = ");
+          Serial.print(celsiusLimitTemp);
+          Serial.print("   celsiusLimit = ");
+          Serial.print(celsiusLimit);         
+          celsiusLimitTemp = celsiusLimit+1;
+         
+      }
+  }
+         else {
+      if (celsiusLimitTemp >= celsiusLimit) {
+         celsiusLimitTemp = celsiusLimit-1;
+         
+      }          
+         IsLampOn =false; 
+         lcd.setCursor(0, 1); //set Starting position
+         DS_MY.PrintString("Power OFF");         
+       }
+
+  
+     lcd.setCursor(13, 0); //set Starting position
+                // DS_MY.PrintString("Limit temp = ");
+                 DS_MY.PrintFloat (celsiusLimitTemp);
+  
+  Serial.print("  Temperature celsius = ");
+  Serial.print(celsius);
+  
    int result = addTwoInts(4,3); // работает из внешнего файла
 
 
@@ -481,9 +437,6 @@ Serial.println (" ");
     
  }     
 }
-// -----------------------
-
-// -----------------------
 
 
 
@@ -492,18 +445,18 @@ void ProcessCommand (  unsigned long key_code){
   
  //   storeCode(&results);
      Serial.println (key_code); 
-   if  (key_code == 16898) // 1 на пульте
-    {
-     Serial.println (key_code);       
-       if (IsClockOn) {
-         IsClockOn =false;
-         digitalWrite(9,LOW);
-         }
-       else {
-         IsClockOn =true; 
-         digitalWrite(9, HIGH);
-       }
-     } 
+
+
+         if  (key_code == 4161210119 || key_code == 4094426880) // громкость +
+          {celsiusLimit++;celsiusLimitTemp =celsiusLimit;} 
+         if  (key_code == 4094363399 || key_code == 4077715200) // громкость -
+          {celsiusLimit--;celsiusLimitTemp =celsiusLimit;}   
+               if  (key_code == 4161210119 || key_code == 4094363399 || key_code == 4077715200 || key_code == 4094426880)//громкость +-
+               {
+                 lcd.setCursor(0, 0); //set Starting position
+                 DS_MY.PrintString("Limit temp = ");
+                 DS_MY.PrintFloat (celsiusLimitTemp);
+               }
  
     if  (key_code == 16642 || key_code == 50) // 2 на пульте
     {
@@ -516,16 +469,7 @@ void ProcessCommand (  unsigned long key_code){
        }
      }   
      
-   if  (key_code == 17154 || key_code == 51  ) // 51-ascii =  3 на пульте
-    {
-     Serial.println (key_code);       
-       if (IsLampOn) {
-         IsLampOn =false;
-         }
-       else {
-         IsLampOn =true; 
-       }
-     }      
+    
      
 
     if  (key_code == 17806) // MENU на пульте
@@ -562,8 +506,6 @@ void ProcessCommand (  unsigned long key_code){
 
          if  (key_code == 16770   ) // 6 на пульте   
           {_DateStruct.year--;  } 
-
-
 
 
 
